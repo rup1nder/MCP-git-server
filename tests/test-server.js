@@ -3,9 +3,9 @@ async function testServer() {
   try {
     console.log('Testing MCP SDK imports...');
 
-    // Try importing the SDK directly from file path
-    const serverModule = await import('./node_modules/@modelcontextprotocol/sdk/dist/server/index.js');
-    const stdioModule = await import('./node_modules/@modelcontextprotocol/sdk/dist/server/stdio.js');
+    // Try importing the SDK using package name
+    const serverModule = await import('@modelcontextprotocol/sdk/server');
+    const stdioModule = await import('@modelcontextprotocol/sdk/server/stdio');
 
     console.log('Server class:', serverModule.Server);
     console.log('StdioServerTransport class:', stdioModule.StdioServerTransport);

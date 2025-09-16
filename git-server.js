@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import simpleGit from 'simple-git';
 import { z } from 'zod';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Default repository path - can be overridden via environment variable
-const REPO_PATH = process.env.GIT_REPO_PATH || '/Users/rupindersingh/code/encryptdecrypt2';
+const REPO_PATH = process.env.GIT_REPO_PATH || process.cwd();
 
 // Function to create git instance with error handling
-function createGitInstance() {
+export function createGitInstance() {
   try {
     return simpleGit(REPO_PATH);
   } catch (error) {
@@ -14,19 +17,14 @@ function createGitInstance() {
   }
 }
 
-// Import MCP SDK dynamically
-const { Server } = await import('./node_modules/@modelcontextprotocol/sdk/dist/server/index.js');
-const { StdioServerTransport } = await import('./node_modules/@modelcontextprotocol/sdk/dist/server/stdio.js');
-const { ListToolsRequestSchema, CallToolRequestSchema } = await import('./node_modules/@modelcontextprotocol/sdk/dist/types.js');
-
 // Create an MCP server
-const server = new Server({
+export const server = new Server({
   name: "git-server",
   version: "0.1.0"
 });
 
 // Define available tools
-const tools = [
+export const tools = [
   {
     name: "git_status",
     description: "Get the current Git repository status",
@@ -146,7 +144,7 @@ const tools = [
 ];
 
 // Tool execution handler
-async function executeTool(name, args) {
+export async function executeTool(name, args) {
   switch (name) {
     case "git_status":
       try {
@@ -469,10 +467,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 // Start receiving messages on stdin and sending messages on stdout
-async function main() {
+export async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Git MCP server running on stdio');
 }
 
-main().catch(console.error);
+// Only run main if this file is executed directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
+}
