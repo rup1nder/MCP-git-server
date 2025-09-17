@@ -42,6 +42,12 @@ const pullChangesSchema = z.object({
   remote: z.string().optional().describe("Remote name (defaults to 'origin')"),
   branch: z.string().optional().describe("Branch to pull (defaults to current)")
 });
+const gitDiffSchema = z.object({
+  repo_path: z.string().describe("Path to the git repository"),
+  source: z.string().optional().describe("Source commit/branch to compare from. Defaults to HEAD"),
+  target: z.string().optional().describe("Target commit/branch to compare to. If not specified, compares working directory to source"),
+  files: z.array(z.string()).optional().describe("Specific files to include in the diff")
+});
 
 // Tool implementations
 const tools = {
@@ -114,7 +120,7 @@ const tools = {
           isError: true
         };
       }
-    }
+    } 
   },
 
   merge_branch: {
@@ -249,6 +255,35 @@ const tools = {
       } catch (error) {
         return {
           content: [{ type: "text", text: `Pull error: ${error instanceof Error ? error.message : String(error)}` }],
+          isError: true
+        };
+      }
+    }
+  },
+
+  git_diff: {
+    schema: gitDiffSchema,
+    handler: async (args: { repo_path: string; source?: string; target?: string; files?: string[] }) => {
+      try {
+        const gitInstance = simpleGit(args.repo_path);
+        let diffArgs: string[] = [];
+        if (args.source) {
+          diffArgs.push(args.source);
+        }
+        if (args.target) {
+          diffArgs.push(args.target);
+        }
+        if (args.files && args.files.length > 0) {
+          diffArgs.push('--');
+          diffArgs.push(...args.files);
+        }
+        const diff = await gitInstance.diff(diffArgs);
+        return {
+          content: [{ type: "text", text: diff || "No differences found" }]
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text", text: `Git diff error: ${error instanceof Error ? error.message : String(error)}` }],
           isError: true
         };
       }
