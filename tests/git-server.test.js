@@ -8,7 +8,7 @@
 import { spawn } from 'child_process';
 
 // Test configuration
-const TEST_REPO_PATH = '/Users/rupindersingh/code/encryptdecrypt2';
+const TEST_REPO_PATH = '/Users/rupindersingh/code/Kilo-Code/MCP/git-server';
 const SERVER_PATH = '/Users/rupindersingh/code/Kilo-Code/MCP/git-server/git-server.js';
 
 // Test results tracking
