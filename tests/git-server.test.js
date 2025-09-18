@@ -328,7 +328,7 @@ async function testWorktreeCreationTool() {
           params: {
             name: 'create_worktree',
             arguments: {
-              path: `/tmp/mcp-test-worktree-${timestamp}`,
+              path: `tmp/mcp-test-worktree-${timestamp}`,
               branch: `mcp-worktree-branch-${timestamp}`
             }
           }

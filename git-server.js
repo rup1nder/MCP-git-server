@@ -8,6 +8,56 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprot
 // Default repository path - can be overridden via environment variable
 const REPO_PATH = process.env.GIT_REPO_PATH || process.cwd();
 
+// Input validation functions
+function validatePath(path) {
+  if (!path || typeof path !== 'string') {
+    throw new Error('Path must be a non-empty string');
+  }
+
+  // Prevent path traversal
+  if (path.includes('..') || path.startsWith('/') || path.includes('\\')) {
+    throw new Error('Invalid path: path traversal not allowed');
+  }
+
+  // Prevent absolute paths and other dangerous patterns
+  if (path.match(/^\/|[<>|&;$`]/)) {
+    throw new Error('Invalid path: dangerous characters not allowed');
+  }
+
+  return path;
+}
+
+function validateBranchName(branchName) {
+  if (!branchName || typeof branchName !== 'string') {
+    throw new Error('Branch name must be a non-empty string');
+  }
+
+  // Prevent command injection and dangerous characters
+  if (branchName.match(/[<>|&;$`\\]/) || branchName.includes('..')) {
+    throw new Error('Invalid branch name: dangerous characters not allowed');
+  }
+
+  // Prevent empty or whitespace-only names
+  if (branchName.trim().length === 0) {
+    throw new Error('Branch name cannot be empty or whitespace-only');
+  }
+
+  return branchName.trim();
+}
+
+function validateCommitMessage(message) {
+  if (!message || typeof message !== 'string') {
+    throw new Error('Commit message must be a non-empty string');
+  }
+
+  // Prevent command injection
+  if (message.match(/[<>|&;$`\\]/)) {
+    throw new Error('Invalid commit message: dangerous characters not allowed');
+  }
+
+  return message;
+}
+
 // Function to create git instance with error handling
 export function createGitInstance() {
   try {
@@ -174,16 +224,19 @@ export async function executeTool(name, args) {
       try {
         const git = createGitInstance();
         const { branchName, fromBranch } = args;
-        if (fromBranch) {
-          await git.checkoutBranch(branchName, fromBranch);
+        const validatedBranchName = validateBranchName(branchName);
+        const validatedFromBranch = fromBranch ? validateBranchName(fromBranch) : undefined;
+
+        if (validatedFromBranch) {
+          await git.checkoutBranch(validatedBranchName, validatedFromBranch);
         } else {
-          await git.checkoutLocalBranch(branchName);
+          await git.checkoutLocalBranch(validatedBranchName);
         }
         return {
           content: [
             {
               type: "text",
-              text: `Branch '${branchName}' created successfully${fromBranch ? ` from '${fromBranch}'` : ''}`,
+              text: `Branch '${validatedBranchName}' created successfully${validatedFromBranch ? ` from '${validatedFromBranch}'` : ''}`,
             },
           ],
         };
@@ -203,12 +256,13 @@ export async function executeTool(name, args) {
       try {
         const git = createGitInstance();
         const { branchName } = args;
-        await git.checkout(branchName);
+        const validatedBranchName = validateBranchName(branchName);
+        await git.checkout(validatedBranchName);
         return {
           content: [
             {
               type: "text",
-              text: `Switched to branch '${branchName}'`,
+              text: `Switched to branch '${validatedBranchName}'`,
             },
           ],
         };
@@ -252,14 +306,16 @@ export async function executeTool(name, args) {
       try {
         const git = createGitInstance();
         const { path, branch } = args;
-        const worktreeBranch = branch || path.split('/').pop() || 'worktree-branch';
+        const validatedPath = validatePath(path);
+        const validatedBranch = branch ? validateBranchName(branch) : undefined;
+        const worktreeBranch = validatedBranch || validatedPath.split('/').pop() || 'worktree-branch';
         // Use -b flag to create a new branch for the worktree
-        await git.raw(['worktree', 'add', '-b', worktreeBranch, path]);
+        await git.raw(['worktree', 'add', '-b', worktreeBranch, validatedPath]);
         return {
           content: [
             {
               type: "text",
-              text: `Worktree created at '${path}' on new branch '${worktreeBranch}'`,
+              text: `Worktree created at '${validatedPath}' on new branch '${worktreeBranch}'`,
             },
           ],
         };
@@ -303,15 +359,18 @@ export async function executeTool(name, args) {
       try {
         const git = createGitInstance();
         const { sourceBranch, targetBranch } = args;
-        if (targetBranch) {
-          await git.checkout(targetBranch);
+        const validatedSourceBranch = validateBranchName(sourceBranch);
+        const validatedTargetBranch = targetBranch ? validateBranchName(targetBranch) : undefined;
+
+        if (validatedTargetBranch) {
+          await git.checkout(validatedTargetBranch);
         }
-        await git.merge([sourceBranch]);
+        await git.merge([validatedSourceBranch]);
         return {
           content: [
             {
               type: "text",
-              text: `Merged '${sourceBranch}' into '${targetBranch || 'current branch'}'`,
+              text: `Merged '${validatedSourceBranch}' into '${validatedTargetBranch || 'current branch'}'`,
             },
           ],
         };
@@ -331,12 +390,13 @@ export async function executeTool(name, args) {
       try {
         const git = createGitInstance();
         const { path } = args;
-        await git.raw(['worktree', 'remove', path]);
+        const validatedPath = validatePath(path);
+        await git.raw(['worktree', 'remove', validatedPath]);
         return {
           content: [
             {
               type: "text",
-              text: `Worktree at '${path}' removed successfully`,
+              text: `Worktree at '${validatedPath}' removed successfully`,
             },
           ],
         };
@@ -356,12 +416,25 @@ export async function executeTool(name, args) {
       try {
         const git = createGitInstance();
         const { message, files } = args;
+        const validatedMessage = validateCommitMessage(message);
+
         if (files && files.length > 0) {
-          await git.add(files);
+          // Validate file paths if provided
+          const validatedFiles = files.map(file => {
+            if (typeof file !== 'string') {
+              throw new Error('File paths must be strings');
+            }
+            // Basic validation for file paths
+            if (file.includes('..') || file.startsWith('/') || file.includes('\\') || file.match(/[<>|&;$`]/)) {
+              throw new Error(`Invalid file path: ${file}`);
+            }
+            return file;
+          });
+          await git.add(validatedFiles);
         } else {
           await git.add('.');
         }
-        const result = await git.commit(message);
+        const result = await git.commit(validatedMessage);
         return {
           content: [
             {

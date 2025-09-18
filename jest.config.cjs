@@ -2,7 +2,12 @@ module.exports = {
   preset: null,
   testEnvironment: 'node',
   injectGlobals: true,
-  transform: {},
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(simple-git|@modelcontextprotocol)/)'
+  ],
   roots: ['<rootDir>/tests'],
   testMatch: [
     '**/__tests__/**/*.test.js',

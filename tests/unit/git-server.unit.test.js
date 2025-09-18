@@ -5,7 +5,7 @@
  * Focus: 100% code coverage with isolated unit tests
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
+import { jest } from '@jest/globals';
 
 // Mock simple-git
 const mockSimpleGit = jest.fn();
@@ -23,8 +23,8 @@ const mockGitInstance = {
   pull: jest.fn()
 };
 
-jest.mock('simple-git', () => ({
-  __esModule: true,
+// Use unstable_mockModule for ES modules
+jest.unstable_mockModule('simple-git', () => ({
   default: mockSimpleGit.mockReturnValue(mockGitInstance)
 }));
 
@@ -36,15 +36,15 @@ const mockServer = {
 
 const mockStdioServerTransport = jest.fn();
 
-jest.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
+jest.unstable_mockModule('@modelcontextprotocol/sdk/server/index.js', () => ({
   Server: jest.fn().mockImplementation(() => mockServer)
 }));
 
-jest.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
+jest.unstable_mockModule('@modelcontextprotocol/sdk/server/stdio.js', () => ({
   StdioServerTransport: mockStdioServerTransport
 }));
 
-jest.mock('@modelcontextprotocol/sdk/types.js', () => ({
+jest.unstable_mockModule('@modelcontextprotocol/sdk/types.js', () => ({
   ListToolsRequestSchema: 'mock-list-tools-schema',
   CallToolRequestSchema: 'mock-call-tools-schema'
 }));
