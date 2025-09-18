@@ -164,12 +164,39 @@ This test plan covers comprehensive testing for the Git MCP Server application, 
 - [x] Repository access control (100% pass rate)
 - [x] Environment variable protection (100% pass rate)
 - [x] Input validation (100% pass rate)
+- [x] Configurable cleanup for debugging (environment variable control)
 
 ### Overall Quality
 - [x] No critical security vulnerabilities detected
 - [x] Comprehensive error handling implemented
 - [x] Clean test output and reporting
 - [x] Maintainable test codebase with new performance and security test suites
+
+## Test Configuration and Debugging
+
+### Configurable Cleanup Feature
+The security tests now support configurable cleanup to balance between clean testing and debugging capabilities:
+
+#### Environment Variables:
+- `SECURITY_TEST_CLEANUP=false` - Disable automatic cleanup (preserve test artifacts for debugging)
+- `SECURITY_TEST_DEBUG=true` - Enable debug logging for test operations
+
+#### Usage Examples:
+```bash
+# Normal testing (default - automatic cleanup)
+npm test
+
+# Debug mode (keep artifacts for investigation)
+SECURITY_TEST_CLEANUP=false npm test
+
+# Debug mode with verbose logging
+SECURITY_TEST_CLEANUP=false SECURITY_TEST_DEBUG=true npm test
+```
+
+#### Benefits:
+- **Clean CI/CD**: Automatic cleanup ensures clean test environments
+- **Debug Support**: Disable cleanup to inspect test artifacts when debugging
+- **Flexible Testing**: Choose appropriate mode based on testing needs
 
 ## Test Maintenance
 
