@@ -9,7 +9,7 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprot
 const REPO_PATH = process.env.GIT_REPO_PATH || process.cwd();
 
 // Input validation functions
-function validatePath(path) {
+export function validatePath(path) {
   if (!path || typeof path !== 'string') {
     throw new Error('Path must be a non-empty string');
   }
@@ -27,7 +27,7 @@ function validatePath(path) {
   return path;
 }
 
-function validateBranchName(branchName) {
+export function validateBranchName(branchName) {
   if (!branchName || typeof branchName !== 'string') {
     throw new Error('Branch name must be a non-empty string');
   }
@@ -45,7 +45,7 @@ function validateBranchName(branchName) {
   return branchName.trim();
 }
 
-function validateCommitMessage(message) {
+export function validateCommitMessage(message) {
   if (!message || typeof message !== 'string') {
     throw new Error('Commit message must be a non-empty string');
   }
